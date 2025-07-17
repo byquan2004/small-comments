@@ -32,6 +32,15 @@ public class RegexUtils {
         return mismatch(code, RegexPatterns.VERIFY_CODE_REGEX);
     }
 
+    /**
+     * 是否是无效密码格式
+     * @param password 要校验的密码
+     * @return true:符合，false：不符合
+     */
+    public static boolean isPasswordInvalid(String password){
+        return mismatch(password, RegexPatterns.PASSWORD_REGEX);
+    }
+
     // 校验是否不符合正则格式
     private static boolean mismatch(String str, String regex){
         if (StrUtil.isBlank(str)) {
