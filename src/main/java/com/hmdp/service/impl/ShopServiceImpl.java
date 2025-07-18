@@ -39,7 +39,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
     @Override
     public Result queryShopById(Long id) {
-        return getResultWithLogicalExpire(id);
+        return getResultWithBreakdownForMutex(id);
     }
 
     /**
@@ -134,20 +134,29 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
             // 独立线程重建缓存
             CACHE_REBUILD_EXECUTOR.submit(() -> {
-                System.out.println(Thread.currentThread().getName());
-                Shop dbShop = getById(id);
-                RedisData data = new RedisData();
-                data.setExpireTime(LocalDateTime.now().plusMinutes(CACHE_SHOP_TTL));
-                data.setData(dbShop);
-                stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(data));
+                try {
+                    System.out.println(Thread.currentThread().getName());
+                    Shop dbShop = getById(id);
+
+                    Thread.sleep(200);
+
+                    RedisData data = new RedisData();
+                    data.setExpireTime(LocalDateTime.now().plusMinutes(CACHE_SHOP_TTL));
+                    data.setData(dbShop);
+                    stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(data));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    lockUtils.unlock();
+                }
+
+
             });
             // 返回旧数据
             return Result.ok(shop);
         } catch (Exception e){
             e.printStackTrace();
             Result.fail("商品不存在");
-        } finally {
-            lockUtils.unlock();
         }
         return Result.fail("商品不存在");
     }
