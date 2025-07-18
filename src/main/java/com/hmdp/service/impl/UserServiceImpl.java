@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.LoginFormDTO;
 import com.hmdp.dto.Result;
@@ -21,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,8 +36,7 @@ import static com.hmdp.utils.RedisConstants.*;
  * 服务实现类
  * </p>
  *
- * @author 虎哥
- * @since 2021-12-22
+ * 
  */
 @Slf4j
 @Service
@@ -73,31 +72,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String password = loginForm.getPassword();
         String code = loginForm.getCode();
         User entity = lambdaQuery().eq(User::getPhone, phone).one();
-
-        if(entity == null || ObjectUtils.isEmpty( entity)) {
-            entity = createWithPhone(phone);
-        }
-        UserDTO user = new UserDTO();
-        BeanUtils.copyProperties(entity,user);
         String token = UUID.randomUUID().toString();
         // 密码登录
-        if(StrUtil.isNotBlank(password) && RegexUtils.isPasswordInvalid(password)) {
+        if(StrUtil.isNotBlank(password) && !RegexUtils.isPasswordInvalid(password)) {
             boolean matches = PasswordEncoder.matches(password, entity.getPassword());
             if(!matches) {
                 throw new RuntimeException("密码错误");
             }
-            save2Cache(token, user);
+            if(ObjectUtils.isEmpty(entity)) {
+                throw new RuntimeException("用户不存在");
+            }
+            saveToken2Cache(token, entity);
             return Result.ok(token);
         }
 
         // 验证码登录
-        if(StrUtil.isNotBlank(code) && RegexUtils.isCodeInvalid(password)) {
+        if(StrUtil.isNotBlank(code) && !RegexUtils.isCodeInvalid(code)) {
             String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
             boolean matches = code.equals(cacheCode);
             if(!matches) {
                 throw new RuntimeException("验证码错误");
             }
-            save2Cache(token, user);
+
+            if(ObjectUtils.isEmpty( entity)) {
+                entity = createWithPhone(phone);
+
+            }
+            saveToken2Cache(token, entity);
             return Result.ok(token);
         }
 
@@ -122,7 +123,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return Result.ok(getById(userId));
     }
 
-    private void save2Cache(String token, UserDTO user) {
+    private void saveToken2Cache(String token, User entity) {
+        UserDTO user = new UserDTO();
+        BeanUtils.copyProperties(entity, user);
         Map<String, Object> map = BeanUtil.beanToMap(user, new HashMap<>(), CopyOptions.create());
         Map<String, String> stringMap = map.entrySet().stream()
                 .collect(
