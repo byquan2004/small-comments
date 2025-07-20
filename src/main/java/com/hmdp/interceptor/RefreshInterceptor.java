@@ -1,7 +1,7 @@
 package com.hmdp.interceptor;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.utils.UserHolder;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,7 +10,6 @@ import org.springframework.core.Ordered;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
@@ -33,14 +32,22 @@ public class RefreshInterceptor implements HandlerInterceptor, Ordered {
         }
 
         String key = LOGIN_USER_KEY + token;
-        Map<Object, Object> existUser = stringRedisTemplate.opsForHash().entries(key);
-        if(existUser.isEmpty()) {
+        String jsonStr = stringRedisTemplate.opsForValue().get(key);
+        if(jsonStr == null || jsonStr.isEmpty()) {
             // 登录拦截器 进一步拦截
             return true;
         }
+        // string结构
+        UserDTO bean = JSONUtil.toBean(jsonStr, UserDTO.class);
+        // hash结构
+//        Map<Object, Object> existUser = stringRedisTemplate.opsForHash().entries(key);
+//        if(existUser.isEmpty()) {
+//            // 登录拦截器 进一步拦截
+//            return true;
+//        }
 
-        UserDTO userDTO = BeanUtil.fillBeanWithMap(existUser, new UserDTO(), false);
-        UserHolder.saveUser(userDTO);
+//        UserDTO userDTO = BeanUtil.fillBeanWithMap(existUser, new UserDTO(), false);
+        UserHolder.saveUser(bean);
         stringRedisTemplate.expire(key, LOGIN_USER_TTL, TimeUnit.MINUTES);
 
         return true;

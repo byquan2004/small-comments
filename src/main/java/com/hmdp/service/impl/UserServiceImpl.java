@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.LoginFormDTO;
@@ -123,7 +124,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return Result.ok(getById(userId));
     }
 
-    private void saveToken2Cache(String token, User entity) {
+    /**
+     * hash结构存储用户信息
+     * @param token
+     * @param entity
+     */
+    private void saveToken2CacheWithHash(String token, User entity) {
         UserDTO user = new UserDTO();
         BeanUtils.copyProperties(entity, user);
         Map<String, Object> map = BeanUtil.beanToMap(user, new HashMap<>(), CopyOptions.create());
@@ -137,6 +143,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String key = LOGIN_USER_KEY + token;
         stringRedisTemplate.opsForHash().putAll(key, stringMap);
         stringRedisTemplate.expire(key, LOGIN_USER_TTL, TimeUnit.MINUTES);
+    }
+
+    /**
+     * string结构存储用户信息
+     * @param token
+     * @param entity
+     */
+    private void saveToken2Cache(String token, User entity) {
+        UserDTO user = new UserDTO();
+        BeanUtils.copyProperties(entity, user);
+        String key = LOGIN_USER_KEY + token;
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(user), LOGIN_USER_TTL, TimeUnit.MINUTES);
     }
 
     private User createWithPhone(String phone) {
