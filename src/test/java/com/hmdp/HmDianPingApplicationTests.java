@@ -37,13 +37,6 @@ class HmDianPingApplicationTests {
     private StringRedisTemplate stringRedisTemplate;
 
     @Test
-    void test() {
-        String host = "127.0.0.1";
-        int port = 16379;
-        System.out.println("redis://%s:%d".formatted(host, port));
-    }
-
-    @Test
     void createToken() {
         List<User> list = userService.list(new Page<>(1, 1000));
         Map<String, String> map = new HashMap<>();
@@ -83,7 +76,7 @@ class HmDianPingApplicationTests {
 
 
     @Test
-    void test2() {
+    void feedBoxTest() {
         // 获取当前时间戳
         long currentTimeMillis = System.currentTimeMillis();
 //        System.out.println("Current Time Millis: " + currentTimeMillis);
