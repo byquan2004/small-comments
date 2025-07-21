@@ -105,4 +105,26 @@ class HmDianPingApplicationTests {
         System.out.println(typedTuples);
     }
 
+    @Test
+    void hyperLogLogTest() {
+        /**
+         * 单个hyperloglog 的内存占用大小用于 < 16kb 误差率在0.81%
+         * uv(unique visitor) 唯一访问量或者独立访问量 如可适用于每天登录统计 date + ip
+         * pv(page view) 页面访问量 如适用于统计页面的访问量点击量 timestamp
+         */
+
+
+        String[] values = new String[1000];
+        int j = 0;
+        for (int i = 0; i < 1000000; i++) {
+            j = i % 1000;
+            values[j] = "user_"+i;
+            if(j == 999) {
+                stringRedisTemplate.opsForHyperLogLog().add("uv", values);
+            }
+        }
+        Long count = stringRedisTemplate.opsForHyperLogLog().size("uv");
+        System.out.println("count = "+count);
+    }
+
 }

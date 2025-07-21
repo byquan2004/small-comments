@@ -21,9 +21,12 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,4 +167,67 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         save( user);
         return user;
     }
+
+
+    /**
+     * 用户签到 bitmap实现
+     * @return
+     */
+    @Override
+    public Result sign() {
+        Long userId = UserHolder.getUser().getId();
+        LocalDateTime now = LocalDateTime.now();
+        String yearMonth = now.format(DateTimeFormatter.ofPattern(":yyyy:MM"));
+        int day = now.getDayOfMonth();
+        String key = USER_SIGN_KEY + userId + yearMonth;
+        // 假设今天是5号 刚好签到前面没签到 00001000
+        // 假设到了13号签了一次 00001000 00001000
+        stringRedisTemplate.opsForValue()
+                // bit map可以存储31位bit位，offset从0开始
+                .setBit(key, day - 1, true);
+        return Result.ok();
+    }
+
+    /**
+     * 统计连续签到数
+     * @return
+     */
+    @Override
+    public Result signCount() {
+        Long userId = UserHolder.getUser().getId();
+        LocalDateTime now = LocalDateTime.now();
+        String yearMonth = now.format(DateTimeFormatter.ofPattern(":yyyy:MM"));
+        int day = now.getDayOfMonth();
+        String key = USER_SIGN_KEY + userId + yearMonth;
+        // BITFIELD key GET u[day] 0
+        List<Long> bitField = stringRedisTemplate.opsForValue()
+                .bitField(
+                        key,
+                        // 子命令 因为bitField一个命令可以操作多个字段
+                        BitFieldSubCommands.create()
+                                // 获取bit位个数 所以当然是到今天
+                                .get(BitFieldSubCommands.BitFieldType.unsigned(day))
+                                // 从0位开始
+                                .valueAt(0)
+                );
+
+        if(bitField == null || bitField.isEmpty()) {
+            return Result.ok(0); // 没有签到
+        }
+        // 操作的是get一个命令所以能确定只有一个结果
+        Long signRes = bitField.get(0);
+        if(signRes == null || signRes == 0) {
+            return Result.ok(0); // 没有签到
+        }
+        int count = 0;
+        // 未签到或签到中断 跳出循环
+        // 与1做 & 运算可以拿到最后一个bit位
+        while ((signRes & 1) != 0) {
+            count++;
+            // 移动一位
+            signRes = signRes >> 1;
+        }
+        return Result.ok(count);
+    }
+
 }
