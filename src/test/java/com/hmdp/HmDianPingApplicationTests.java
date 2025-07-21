@@ -12,6 +12,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
 
@@ -77,6 +79,30 @@ class HmDianPingApplicationTests {
         } catch (IOException e) {
             System.err.println("写入文件时发生错误: " + e.getMessage());
         }
+    }
+
+
+    @Test
+    void test2() {
+        // 获取当前时间戳
+        long currentTimeMillis = System.currentTimeMillis();
+//        System.out.println("Current Time Millis: " + currentTimeMillis);
+//
+//        // 查询 zset 中 score 在 [0, currentTimeMillis] 范围内的元素
+//        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate
+//                .opsForZSet()
+//                .reverseRangeByScoreWithScores("feed:1", 0, currentTimeMillis);
+//
+//        // 打印查询结果
+//        if(typedTuples == null || typedTuples.isEmpty()) {
+//            System.out.println("No elements found in the zset.");
+//        }
+//        System.out.println("Elements in the zset: "+ typedTuples);
+
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate
+                .opsForZSet()
+                .reverseRangeByScoreWithScores("feed:1", 0, currentTimeMillis);
+        System.out.println(typedTuples);
     }
 
 }
