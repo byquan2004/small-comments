@@ -1,4 +1,4 @@
-# small-comment 项目文档
+# small-comment(小众点评)
 
 ## 项目简介
 模拟了类似大众点评的功能。项目支持商铺信息管理、用户评论、优惠券发放等核心功能，采用 Redis 缓存提升高并发场景下的性能表现。
@@ -44,10 +44,10 @@
 - redis实现全局id生成器 可适用于订单id 和 优惠券id
 
 ## 其他资源(src/main/resources)
-[db](src/main/resources/db)
-[hmdp.sql](src/main/resources/db/hmdp.sql)
-[nginx.zip](src/main/resources/static/nginx.zip) docker部署nginx
-[ports.csv](src/main/resources/static/ports.csv)
-[SECOND_KILL_VOUCHER.lua](src/main/resources/static/SECOND_KILL_VOUCHER.lua)
-[Test Plan.jmx](src/main/resources/static/Test%20Plan.jmx)
-[UNLOCK.lua](src/main/resources/static/UNLOCK.lua)
+- [db](src/main/resources/db)
+- [hmdp.sql](src/main/resources/db/hmdp.sql)
+- [nginx.zip](src/main/resources/static/nginx.zip) docker部署nginx
+- [ports.csv](src/main/resources/static/ports.csv)
+- [SECOND_KILL_VOUCHER.lua](src/main/resources/static/SECOND_KILL_VOUCHER.lua)
+- [Test Plan.jmx](src/main/resources/static/Test%20Plan.jmx)
+- [UNLOCK.lua](src/main/resources/static/UNLOCK.lua)
